@@ -9,7 +9,9 @@ import com.alura.litera_challenge.repository.BookRepository;
 import com.alura.litera_challenge.service.DataConverter;
 import com.alura.litera_challenge.service.QueryAPI;
 
+import java.util.InputMismatchException;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Main {
@@ -31,42 +33,48 @@ public class Main {
         var opcion = -1;
         while (opcion != 0) {
             var menu = """
-                    
-                    ************** Menu Principal - Litera_Challenge App **************
-                    
-                    1 - Buscar libros por título
-                    2 - Listar libros registrados
-                    3 - Listar autores registrados
-                    4 - Listar autores vivos en un determinado año
-                    5 - Listar libros por idioma
-                    0 - Salir
-                    """;
+                
+                ************** Menu Principal - Litera_Challenge App **************
+                
+                1 - Buscar libros por título
+                2 - Listar libros registrados
+                3 - Listar autores registrados
+                4 - Listar autores vivos en un determinado año
+                5 - Listar libros por idioma
+                0 - Salir
+                """;
             System.out.println(menu);
             System.out.print("Digite la opción aquí: ");
-            opcion = teclado.nextInt();
-            teclado.nextLine();
 
-            switch (opcion) {
-                case 1:
-                    searchBookByTitle();
-                    break;
-                case 2:
-                    getRegisteredBooks();
-                    break;
-                case 3:
-                    getRegisteredAuthors();
-                    break;
-                case 4:
-                    getLivingAuthorsByYear();
-                    break;
-                case 5:
-                    getBooksByLanguage();
-                    break;
-                case 0:
-                    System.out.println("Muchas gracias por usar nuestra aplicación...");
-                    break;
-                default:
-                    System.out.println("Opción inválida");
+            try {
+                opcion = teclado.nextInt();
+                teclado.nextLine(); // limpiar el buffer
+
+                switch (opcion) {
+                    case 1:
+                        searchBookByTitle();
+                        break;
+                    case 2:
+                        getRegisteredBooks();
+                        break;
+                    case 3:
+                        getRegisteredAuthors();
+                        break;
+                    case 4:
+                        getLivingAuthorsByYear();
+                        break;
+                    case 5:
+                        getBooksByLanguage();
+                        break;
+                    case 0:
+                        System.out.println("Muchas gracias por usar nuestra aplicación...");
+                        break;
+                    default:
+                        System.out.println("Opción inválida");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("Formato inválido. Por favor, ingrese un número entero.");
+                teclado.nextLine();
             }
         }
 
@@ -79,21 +87,30 @@ public class Main {
         var json = queryAPI.getData(URL_BASE + "?search=" + title.replace(" ", "%20"));
         DataResponse datos = converter.getData(json, DataResponse.class);
         System.out.println(datos.results());
-        if(!datos.results().isEmpty()){
-            Book book = new Book(datos.results().get(0));
-            Author author = datos.results().get(0).authors().get(0);
-            bookRepository.save(book);
-            authorRepository.save(author);
 
-            System.out.println(book);
-        }else {
-            System.out.println("Libro no encontrado!!");
+        Optional<Book> existingBook = bookRepository.findByTitulo("Don Quijote");
+
+        System.out.println();
+        if (existingBook.isEmpty()) {
+            if (!datos.results().isEmpty()) {
+                Book book = new Book(datos.results().get(0));
+                Author author = datos.results().get(0).authors().get(0);
+                bookRepository.save(book);
+                authorRepository.save(author);
+
+                System.out.println(book);
+            } else {
+                System.out.println("Libro no encontrado!!");
+            }
+        } else {
+            System.out.println("Ya existe un libro con ese título.");
         }
 
     }
 
     private void getRegisteredBooks() {
         books = bookRepository.findAll();
+        System.out.println();
         if(!books.isEmpty()){
             books.forEach(System.out::println);
         }else{
@@ -104,8 +121,8 @@ public class Main {
 
     private void getRegisteredAuthors() {
         authors = authorRepository.findAll();
+        System.out.println();
         if(!authors.isEmpty()){
-            System.out.println();
             authors.forEach(System.out::println);
         }else {
             System.out.println("No hay autores registrados en la base de datos!!\n");
@@ -150,6 +167,7 @@ public class Main {
         } while (!isValidLanguage);
 
         List<Book> books = bookRepository.searchBooksByIdioma(language);
+        System.out.println();
         if (!books.isEmpty()){
             books.forEach(System.out::println);
         }else {
