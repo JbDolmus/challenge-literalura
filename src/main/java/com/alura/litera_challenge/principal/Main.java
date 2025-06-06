@@ -86,11 +86,11 @@ public class Main {
 
         var json = queryAPI.getData(URL_BASE + "?search=" + title.replace(" ", "%20"));
         DataResponse datos = converter.getData(json, DataResponse.class);
-        System.out.println(datos.results());
 
-        Optional<Book> existingBook = bookRepository.findByTitulo("Don Quijote");
+        Optional<Book> existingBook = bookRepository.findByTitulo(title);
 
         System.out.println();
+
         if (existingBook.isEmpty()) {
             if (!datos.results().isEmpty()) {
                 Book book = new Book(datos.results().get(0));
